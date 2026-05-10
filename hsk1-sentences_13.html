@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HSK 1 句子">
+<meta name="theme-color" content="#0f0f0f">
+<title>HSK 1 Sentence Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--surface3:#2e2e2e;
+  --border:rgba(255,255,255,0.09);--text:#f0ece4;
+  --muted:rgba(240,236,228,0.45);--hint:rgba(240,236,228,0.22);
+  --accent:#c8a96e;--green:#5fbe8a;--green-dim:rgba(95,190,138,0.13);
+  --red:#e06868;--red-dim:rgba(224,104,104,0.13);--blue:#6ba3d6;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{
+  height:100%;height:100dvh;
+  background:var(--bg);color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  overflow:hidden;touch-action:manipulation;
+  -webkit-text-size-adjust:100%;
+}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto}
+
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 18px 8px;
+  flex-shrink:0;
+}
+.header-title{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.score{font-size:13px;color:var(--muted)}
+.score span{font-weight:500;color:var(--text)}
+.progress-track{height:3px;background:var(--border);flex-shrink:0}
+.progress-fill{height:100%;background:var(--accent);transition:width .5s ease;border-radius:0 3px 3px 0}
+
+/* CONTENT AREA */
+.content{
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:14px 16px 8px;
+  display:flex;flex-direction:column;gap:10px;
+  flex-shrink:0;
+}
+.sentence-num{font-size:11px;color:var(--hint);letter-spacing:.06em;padding-left:2px}
+
+/* Prompt card */
+.prompt-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:18px 18px 16px;
+}
+.prompt-label{font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;font-weight:500}
+.prompt-text{font-size:19px;line-height:1.6;color:var(--text);font-weight:400}
+
+/* Answer card */
+.answer-card{
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:18px;padding:14px 16px;min-height:76px;position:relative;
+  transition:border-color .2s;
+}
+.answer-card.focused{border-color:rgba(200,169,110,.35)}
+.answer-label{font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;font-weight:500}
+.answer-text{
+  font-family:'Noto Serif SC',serif;font-size:26px;line-height:1.4;
+  color:var(--text);min-height:38px;letter-spacing:.04em;word-break:break-all;
+}
+.answer-text .cursor{animation:blink 1s step-end infinite;color:var(--accent);font-weight:200}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.hint-btn{
+  position:absolute;top:14px;right:14px;
+  font-size:12px;color:var(--muted);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:5px 10px;cursor:pointer;
+  min-height:32px;display:flex;align-items:center;
+}
+.hint-btn:active{color:var(--accent)}
+
+/* Feedback */
+.feedback-card{border-radius:16px;padding:14px 16px;line-height:1.5;display:none}
+.feedback-card.correct{background:var(--green-dim);border:1px solid rgba(95,190,138,.3);color:var(--green)}
+.feedback-card.wrong{background:var(--red-dim);border:1px solid rgba(224,104,104,.3);color:var(--text)}
+.feedback-card .fb-label{font-size:15px;font-weight:500;margin-bottom:8px}
+.feedback-card .fb-answer{font-family:'Noto Serif SC',serif;font-size:18px;color:var(--text);line-height:1.6}
+.feedback-card .fb-alt{font-size:12px;color:var(--muted);margin-top:6px}
+.fb-answer-row{display:flex;align-items:center;gap:10px}
+.fb-speak-btn{
+  flex-shrink:0;width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s,transform .1s;color:var(--muted);
+}
+.fb-speak-btn:active{transform:scale(.9)}
+.fb-speak-btn.speaking{color:var(--accent);border-color:rgba(200,169,110,.4);background:rgba(200,169,110,.1)}
+.fb-speak-btn svg{width:18px;height:18px;fill:currentColor;flex-shrink:0}
+
+/* ── IME AREA (thumb zone) ── */
+.ime-area{
+  flex-shrink:0;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 8px);
+}
+
+/* Candidate bar */
+.candidates{
+  display:flex;gap:7px;overflow-x:auto;
+  padding:4px 2px 2px;
+  min-height:58px;
+  scrollbar-width:none;align-items:center;
+  flex-shrink:0;
+}
+.candidates::-webkit-scrollbar{display:none}
+.cand-btn{
+  flex-shrink:0;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;
+  min-width:48px;height:52px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 14px;
+  cursor:pointer;transition:background .1s,transform .08s;
+  -webkit-user-select:none;user-select:none;
+}
+.cand-btn:active{background:var(--surface3);transform:scale(.94)}
+.cand-char{font-family:'Noto Serif SC',serif;font-size:22px;color:var(--text);line-height:1}
+.cand-placeholder{font-size:12px;color:var(--hint);padding:4px;align-self:center}
+
+/* Input row */
+.input-row{display:flex;gap:8px;margin-bottom:8px}
+.pinyin-input{
+  flex:1;background:var(--surface2);
+  border:1.5px solid var(--border);border-radius:14px;
+  padding:0 16px;height:48px;
+  font-size:16px;color:var(--text);
+  font-family:'DM Sans',sans-serif;outline:none;
+  -webkit-appearance:none;appearance:none;
+}
+.pinyin-input::placeholder{color:var(--hint)}
+.pinyin-input:focus{border-color:rgba(200,169,110,.4)}
+.back-btn{
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:14px;width:52px;height:48px;
+  font-size:19px;cursor:pointer;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.back-btn:active{background:var(--surface3)}
+
+/* Action row */
+.action-row{display:flex;gap:7px}
+.punct-btn{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;height:48px;
+  font-size:18px;cursor:pointer;color:var(--muted);
+  font-family:'Noto Serif SC',serif;
+  flex:1;display:flex;align-items:center;justify-content:center;
+  transition:background .1s;-webkit-user-select:none;user-select:none;
+}
+.punct-btn:active{background:var(--surface3)}
+.check-btn{
+  flex:3;height:48px;
+  background:rgba(95,190,138,.2);
+  border:1.5px solid rgba(95,190,138,.45);
+  border-radius:12px;
+  font-size:15px;font-weight:600;cursor:pointer;
+  color:var(--green);font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:background .1s;-webkit-user-select:none;user-select:none;
+}
+.check-btn:active{background:rgba(95,190,138,.35)}
+.skip-btn{
+  flex:1.4;height:48px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;
+  font-size:13px;cursor:pointer;color:var(--muted);
+  font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;
+}
+.skip-btn:active{background:var(--surface3)}
+
+/* Next button (replaces next-bar) */
+.next-bar{
+  flex-shrink:0;
+  padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 8px);
+  background:var(--surface);border-top:1px solid var(--border);
+  display:none;
+}
+.next-btn{
+  width:100%;height:52px;border-radius:16px;
+  border:none;
+  background:var(--accent);color:#1a1200;
+  font-size:16px;font-weight:600;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .15s;
+}
+.next-btn:active{opacity:.85}
+
+/* Pinyin annotation */
+.py-word{display:inline-flex;flex-direction:column;align-items:center;margin:0 2px;vertical-align:bottom}
+.py-char{font-family:'Noto Serif SC',serif;font-size:22px;line-height:1.2;color:var(--text)}
+.py-text{font-size:11px;color:var(--accent);line-height:1.3;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.feedback-card .fb-answer{font-size:18px;line-height:1.2}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-title">HSK 1 · 句子练习</div>
+    <div class="header-right">
+      <div class="score">✓ <span id="sr">0</span> &nbsp; ✗ <span id="sw">0</span></div>
+    </div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+
+  <div class="content" id="content">
+    <div class="sentence-num" id="snum">Sentence 1 / —</div>
+
+    <div class="prompt-card">
+      <div class="prompt-label">Translate into Chinese</div>
+      <div class="prompt-text" id="prompt">Loading...</div>
+    </div>
+
+    <div class="answer-card">
+      <div class="answer-label">Your answer</div>
+      <div class="answer-text" id="answer-display"><span class="cursor">|</span></div>
+      <button class="hint-btn" id="hint-btn" onclick="showHint()">Hint</button>
+    </div>
+
+    <div class="feedback-card" id="feedback">
+      <div class="fb-label" id="fb-label"></div>
+      <div class="fb-answer-row">
+        <div class="fb-answer" id="fb-answer"></div>
+        <button class="fb-speak-btn" id="fb-speak-btn" aria-label="Read aloud" onclick="speakAnswer()">
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </button>
+      </div>
+      <div class="fb-alt" id="fb-alt"></div>
+    </div>
+  </div>
+
+  <div class="ime-area" id="ime-area">
+    <div class="candidates" id="candidates">
+      <span class="cand-placeholder">Type pinyin below to see characters</span>
+    </div>
+    <div class="input-row">
+      <input class="pinyin-input" id="pinyin-input" type="text"
+        placeholder="type pinyin…" autocomplete="off" autocorrect="off"
+        autocapitalize="none" spellcheck="false">
+      <button class="back-btn" onclick="doBackspace()">⌫</button>
+    </div>
+    <div class="action-row">
+      <button class="punct-btn" onclick="addChar('。')">。</button>
+      <button class="punct-btn" onclick="addChar('，')">，</button>
+      <button class="punct-btn" onclick="addChar('？')">？</button>
+      <button class="punct-btn" onclick="addChar('！')">！</button>
+      <button class="check-btn" onclick="checkAnswer()">Check ✓</button>
+      <button class="skip-btn" onclick="skipSentence()">Skip</button>
+    </div>
+  </div>
+
+  <div class="next-bar" id="next-bar">
+    <button class="next-btn" onclick="nextSentence()">Next sentence &nbsp;→</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// HSK 1 WORD LIST (300 official New HSK 3.0 Level 1 words)
+// ============================================================
+const HSK1=[
+["爱","ài"],["八","bā"],["爸爸","bàba"],["吧","ba"],["白天","báitiān"],
+["百","bǎi"],["半","bàn"],["包子","bāozi"],["杯子","bēizi"],["本","běn"],
+["边","biān"],["病","bìng"],["不","bù"],["不客气","bú kèqi"],["不要","búyào"],
+["菜","cài"],["茶","chá"],["唱","chàng"],["超市","chāoshì"],["车","chē"],
+["吃","chī"],["出租车","chūzūchē"],["穿","chuān"],["打电话","dǎ diànhuà"],
+["大","dà"],["大家","dàjiā"],["大学","dàxué"],["大学生","dàxuéshēng"],
+["到","dào"],["的","de"],["第","dì"],["弟弟","dìdi"],["点","diǎn"],
+["店","diàn"],["电话","diànhuà"],["电脑","diànnǎo"],["电视","diànshì"],
+["电影","diànyǐng"],["电影院","diànyǐngyuàn"],["东西","dōngxi"],["都","dōu"],
+["读","dú"],["读书","dúshū"],["对","duì"],["对不起","duìbuqǐ"],["多","duō"],
+["多少","duōshao"],["儿子","érzi"],["二","èr"],["饭","fàn"],["饭店","fàndiàn"],
+["房间","fángjiān"],["非常","fēicháng"],["飞机","fēijī"],["分","fēn"],
+["分钟","fēnzhōng"],["高兴","gāoxìng"],["歌","gē"],["哥哥","gēge"],
+["个","gè"],["给","gěi"],["公司","gōngsī"],["工作","gōngzuò"],["狗","gǒu"],
+["贵","guì"],["国","guó"],["还","hái"],["孩子","háizi"],["汉语","Hànyǔ"],
+["汉字","Hànzì"],["好","hǎo"],["好吃","hǎochī"],["好看","hǎokàn"],
+["好听","hǎotīng"],["好玩儿","hǎowánr"],["号","hào"],["喝","hē"],["和","hé"],
+["很","hěn"],["后","hòu"],["回","huí"],["会","huì"],["火车","huǒchē"],
+["鸡蛋","jīdàn"],["几","jǐ"],["家","jiā"],["家人","jiārén"],["见","jiàn"],
+["件","jiàn"],["饺子","jiǎozi"],["叫","jiào"],["姐姐","jiějie"],["今年","jīnnián"],
+["今天","jīntiān"],["九","jiǔ"],["觉得","juéde"],["开","kāi"],["开车","kāichē"],
+["看","kàn"],["看病","kànbìng"],["看见","kànjiàn"],["可以","kěyǐ"],["课","kè"],
+["口","kǒu"],["块","kuài"],["来","lái"],["老师","lǎoshī"],["了","le"],
+["冷","lěng"],["里","lǐ"],["两","liǎng"],["零","líng"],["六","liù"],
+["妈妈","māma"],["吗","ma"],["买","mǎi"],["卖","mài"],["忙","máng"],
+["猫","māo"],["没关系","méi guānxi"],["没事","méishì"],["没有","méiyǒu"],
+["妹妹","mèimei"],["们","men"],["米饭","mǐfàn"],["面包","miànbāo"],
+["面条儿","miàntiáor"],["明年","míngnián"],["明天","míngtiān"],["名字","míngzi"],
+["哪","nǎ"],["哪个","nǎge"],["哪里","nǎlǐ"],["哪儿","nǎr"],["哪些","nǎxiē"],
+["那","nà"],["那边","nàbiān"],["那个","nàge"],["那里","nàlǐ"],["那儿","nàr"],
+["那些","nàxiē"],["男","nán"],["男朋友","nánpéngyou"],["呢","ne"],["能","néng"],
+["你","nǐ"],["你好","nǐ hǎo"],["你们","nǐmen"],["年","nián"],["您","nín"],
+["牛奶","niúnǎi"],["女","nǚ"],["女儿","nǚ'ér"],["女朋友","nǚpéngyou"],
+["女士","nǚshì"],["朋友","péngyou"],["便宜","piányi"],["漂亮","piàoliang"],
+["苹果","píngguǒ"],["七","qī"],["起床","qǐchuáng"],["千","qiān"],["前","qián"],
+["钱","qián"],["请","qǐng"],["请问","qǐngwèn"],["去","qù"],["去年","qùnián"],
+["热","rè"],["人","rén"],["认识","rènshi"],["日","rì"],["三","sān"],
+["商店","shāngdiàn"],["上","shàng"],["上班","shàngbān"],["上课","shàngkè"],
+["上午","shàngwǔ"],["上学","shàngxué"],["少","shǎo"],["谁","shéi"],
+["什么","shénme"],["生病","shēngbìng"],["十","shí"],["时候","shíhou"],
+["时间","shíjiān"],["事","shì"],["是","shì"],["手机","shǒujī"],["书","shū"],
+["书店","shūdiàn"],["水","shuǐ"],["水果","shuǐguǒ"],["睡","shuì"],
+["睡觉","shuìjiào"],["说","shuō"],["说话","shuōhuà"],["四","sì"],["岁","suì"],
+["他","tā"],["它","tā"],["她","tā"],["他们","tāmen"],["它们","tāmen"],
+["她们","tāmen"],["太","tài"],["天","tiān"],["天气","tiānqì"],["听","tīng"],
+["听见","tīngjiàn"],["同学","tóngxué"],["外","wài"],["外边","wàibian"],
+["玩","wán"],["晚","wǎn"],["晚饭","wǎnfàn"],["晚上","wǎnshang"],["喂","wèi"],
+["问","wèn"],["问题","wèntí"],["我","wǒ"],["我们","wǒmen"],["五","wǔ"],
+["午饭","wǔfàn"],["喜欢","xǐhuan"],["下","xià"],["下雨","xià yǔ"],
+["下班","xiàbān"],["下课","xiàkè"],["下午","xiàwǔ"],["先生","xiānsheng"],
+["现在","xiànzài"],["想","xiǎng"],["小","xiǎo"],["小朋友","xiǎopéngyǒu"],
+["小时","xiǎoshí"],["小学","xiǎoxué"],["小学生","xiǎoxuéshēng"],["些","xiē"],
+["写","xiě"],["谢谢","xièxie"],["新","xīn"],["星期","xīngqī"],
+["星期日","xīngqīrì"],["星期天","xīngqītiān"],["休息","xiūxi"],["学","xué"],
+["学生","xuéshēng"],["学习","xuéxí"],["学校","xuéxiào"],["雪","xuě"],
+["要","yào"],["也","yě"],["一","yī"],["衣服","yīfu"],["医生","yīshēng"],
+["医院","yīyuàn"],["一半","yíbàn"],["一下","yíxià"],["椅子","yǐzi"],
+["一点儿","yìdiǎnr"],["一些","yìxiē"],["有","yǒu"],["有的","yǒude"],
+["有点儿","yǒudiǎnr"],["有些","yǒuxiē"],["雨","yǔ"],["元","yuán"],
+["月","yuè"],["再","zài"],["在","zài"],["再见","zàijiàn"],["早","zǎo"],
+["早饭","zǎofàn"],["早上","zǎoshang"],["怎么","zěnme"],["怎么样","zěnmeyàng"],
+["找","zhǎo"],["这","zhè"],["这边","zhèbiān"],["这个","zhège"],["这里","zhèlǐ"],
+["这儿","zhèr"],["这些","zhèxiē"],["真","zhēn"],["正在","zhèngzài"],
+["只","zhī"],["知道","zhīdào"],["中国","Zhōngguó"],["中文","Zhōngwén"],
+["中午","zhōngwǔ"],["中学","zhōngxué"],["中学生","zhōngxuéshēng"],["住","zhù"],
+["桌子","zhuōzi"],["字","zì"],["昨天","zuótiān"],["坐","zuò"],["做","zuò"],
+["做饭","zuò fàn"]
+];
+
+// ============================================================
+// PINYIN IME
+// ============================================================
+function stripTones(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,'');
+}
+
+const pinyinIndex={};
+HSK1.forEach(([char,py])=>{
+  const key=stripTones(py);
+  if(!pinyinIndex[key]) pinyinIndex[key]=[];
+  pinyinIndex[key].push({char,py});
+});
+
+function getCandidates(input){
+  if(!input) return [];
+  const q=input.toLowerCase().replace(/\s/g,'');
+  const matches=[];
+  Object.entries(pinyinIndex).forEach(([key,words])=>{
+    if(key.startsWith(q)){
+      const exact=(key.length===q.length)?0:1;
+      words.forEach(w=>matches.push({...w,key,priority:exact*100+key.length}));
+    }
+  });
+  matches.sort((a,b)=>a.priority-b.priority||a.char.length-b.char.length);
+  const seen=new Set();
+  return matches.filter(m=>{
+    if(seen.has(m.char)) return false;
+    seen.add(m.char); return true;
+  }).slice(0,12);
+}
+
+// ============================================================
+// SENTENCE BANK (1000+ sentences using only HSK1 vocabulary)
+// ============================================================
+function buildSentences(){
+  const S=[];
+  const add=(en,zh)=>S.push({en,zh:Array.isArray(zh)?zh:[zh]});
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+  // Vocabulary groups
+  const F=[['米饭','rice'],['面条儿','noodles'],['包子','steamed buns'],
+    ['饺子','dumplings'],['面包','bread'],['苹果','apples'],
+    ['水果','fruit'],['鸡蛋','eggs'],['菜','vegetables']];
+  const D=[['茶','tea'],['水','water'],['牛奶','milk']];
+  const M=[['早饭','breakfast'],['午饭','lunch'],['晚饭','dinner']];
+  const P=[['学校','school'],['医院','the hospital'],['商店','the store'],
+    ['超市','the supermarket'],['饭店','the restaurant'],
+    ['书店','the bookstore'],['公司','work'],['电影院','the cinema'],['家','home']];
+  const B=[['书','a book'],['苹果','apples'],['水果','fruit'],['菜','vegetables'],
+    ['面包','bread'],['鸡蛋','eggs'],['牛奶','milk'],['衣服','clothes'],
+    ['手机','a phone'],['水','water'],['茶','tea'],['电脑','a computer']];
+  const Adj=[['好','good'],['大','big'],['小','small'],['贵','expensive'],
+    ['便宜','cheap'],['漂亮','beautiful'],['高兴','happy'],['忙','busy'],
+    ['热','hot'],['冷','cold'],['新','new'],['好吃','delicious'],
+    ['好看','nice-looking'],['好听','nice-sounding'],['好玩儿','fun']];
+  const Days=[['今天','Today'],['明天','Tomorrow'],['昨天','Yesterday']];
+  const ToD=[['早上','in the morning'],['上午','in the morning (a.m.)'],
+    ['下午','in the afternoon'],['晚上','in the evening']];
+  const Ppl=[['他','He'],['她','She'],['我爸爸','Dad'],['我妈妈','Mom'],
+    ['我哥哥','My older brother'],['我姐姐','My older sister'],
+    ['我弟弟','My younger brother'],['我妹妹','My younger sister'],
+    ['老师','The teacher'],['朋友','My friend'],['同学','My classmate']];
+  const Things=[['这个','This'],['那个','That'],['天气','The weather'],
+    ['书','The book'],['衣服','The clothes'],['电影','The movie'],
+    ['学校','The school'],['饭店','The restaurant'],['东西','This thing']];
+
+  // ── GREETINGS ──
+  add("Say 'Hello!'",['你好！','你好。']);
+  add("Say 'Goodbye!'",['再见！','再见。']);
+  add("Say 'Good morning!'",['早上好！','早上好。']);
+  add("Say 'Good evening!'",['晚上好！','晚上好。']);
+  add("Ask 'How are you?'","你好吗？");
+  add("Reply: 'I'm very well.'",'我很好。');
+  add("Reply: 'I'm fine, thank you.'",['我很好，谢谢。','我很好。谢谢。']);
+  add("Say 'Thank you.'",['谢谢。','谢谢你。']);
+  add("Say 'You're welcome.'",'不客气。');
+  add("Say 'I'm sorry.'",'对不起。');
+  add("Say 'Never mind / It's okay.'",['没关系。','没事。']);
+  add("Say 'Please come in.'",'请进。');
+  add("Say 'Please sit down.'",'请坐。');
+  add("Ask 'What is your name?'",'你叫什么名字？');
+  add("Say 'Nice to meet you.'",['很高兴认识你。','认识你很高兴。']);
+  add("Say 'See you tomorrow.'",'明天见。');
+  add("Say 'Hello' when answering the phone.",['喂！','喂。']);
+  add("Say 'Excuse me, may I ask...' (politely).",'请问。');
+  add("Say 'I don't know.'",'我不知道。');
+  add("Say 'I know.'",'我知道。');
+  add("Say 'I understand now.'",'我知道了。');
+  add("Say 'Yes, that's right.'",['是的。','对。','是。']);
+  add("Say 'No, that's not right.'",['不是。','不对。']);
+  add("Say 'Please say it again.'",'请再说一下。');
+  add("Say 'Please wait a moment.'",'请等一下。');
+  add("Say 'It doesn't matter.'",['没关系。','没事。']);
+
+  // ── IDENTITY ──
+  add("Say 'I am Chinese.'",'我是中国人。');
+  add("Ask 'Are you Chinese?'",'你是中国人吗？');
+  add("Say 'I am a student.'",'我是学生。');
+  add("Say 'I am a teacher.'",'我是老师。');
+  add("Say 'I am a doctor.'",'我是医生。');
+  add("Say 'She is a student.'",'她是学生。');
+  add("Say 'He is a teacher.'",'他是老师。');
+  add("Ask 'Are you a student?'",'你是学生吗？');
+  add("Say 'I am a university student.'",'我是大学生。');
+  add("Say 'He is a middle school student.'",'他是中学生。');
+  add("Say 'She is a primary school student.'",'她是小学生。');
+  add("Ask 'What is this?'",'这是什么？');
+  add("Ask 'What is that?'",'那是什么？');
+  add("Say 'This is a book.'",'这是书。');
+  add("Say 'This is my phone.'",'这是我的手机。');
+  add("Say 'That is a computer.'",'那是电脑。');
+  add("Ask 'Is this yours?'",'这是你的吗？');
+  add("Say 'This is mine.'",'这是我的。');
+  add("Say 'That is not mine.'",'那不是我的。');
+  add("Say 'This is my friend.'",'这是我的朋友。');
+  add("Say 'This is my teacher.'",'这是我的老师。');
+  add("Say 'This is my classmate.'",'这是我的同学。');
+  add("Say 'I love China.'",'我爱中国。');
+  add("Ask 'Do you like China?'",'你喜欢中国吗？');
+  add("Say 'China is very big.'",'中国很大。');
+
+  // ── FAMILY ──
+  add("Say 'I have one older brother.'",'我有一个哥哥。');
+  add("Say 'I have one younger sister.'",'我有一个妹妹。');
+  add("Say 'I have one older sister.'",'我有一个姐姐。');
+  add("Say 'I have one younger brother.'",'我有一个弟弟。');
+  add("Say 'I have a son.'",'我有一个儿子。');
+  add("Say 'I have a daughter.'",'我有一个女儿。');
+  add("Say 'I don't have any brothers.'",['我没有哥哥。','我没有弟弟。']);
+  add("Say 'I don't have any sisters.'",['我没有姐姐。','我没有妹妹。']);
+  add("Ask 'How old are you?'",['你多大？','你几岁？']);
+  add("Say 'I am 20 years old.'",'我二十岁。');
+  add("Say 'My dad is 50 years old.'",'我爸爸五十岁。');
+  add("Say 'My mom is 45 years old.'",'我妈妈四十五岁。');
+  add("Say 'I love my family.'",'我爱我的家人。');
+  add("Say 'I love my mom.'",'我爱妈妈。');
+  add("Say 'I love my dad.'",'我爱爸爸。');
+  add("Say 'My mom is a teacher.'",'我妈妈是老师。');
+  add("Say 'My dad is a doctor.'",'我爸爸是医生。');
+  add("Say 'My older brother is a student.'",'我哥哥是学生。');
+  add("Say 'My older sister is very pretty.'",'我姐姐很漂亮。');
+  add("Ask 'How is your family?'",'你的家人好吗？');
+  add("Say 'My family is doing well.'",'我的家人很好。');
+  add("Say 'He is my boyfriend.'",'他是我的男朋友。');
+  add("Say 'She is my girlfriend.'",'她是我的女朋友。');
+  add("Ask 'How many people are in your family?'",'你家有几个人？');
+  add("Say 'There are 4 people in my family.'",'我家有四个人。');
+  add("Say 'There are 3 people in my family.'",'我家有三个人。');
+  add("Say 'My family lives in China.'",'我的家人住在中国。');
+  add("Ask 'Does your dad work?'",'你爸爸上班吗？');
+  add("Say 'My dad drives to work.'",'我爸爸开车上班。');
+  add("Say 'My mom works at home.'",'我妈妈在家工作。');
+  add("Say 'My older brother is at school.'",'我哥哥在学校。');
+  add("Say 'My older sister likes to sing.'",'我姐姐喜欢唱歌。');
+  add("Say 'My younger brother likes to play.'",'我弟弟喜欢玩。');
+  add("Say 'My younger sister likes to read.'",'我妹妹喜欢看书。');
+  add("Say 'I have many friends.'",'我有很多朋友。');
+  add("Say 'My classmate is a good student.'",'我的同学是好学生。');
+  add("Say 'I know him.'",'我认识他。');
+  add("Ask 'Do you know her?'",'你认识她吗？');
+  add("Say 'I don't know that person.'",'我不认识那个人。');
+  add("Ask 'Do you know my friend?'",'你认识我的朋友吗？');
+
+  // ── FOOD TEMPLATES ──
+  F.forEach(([fz,fe])=>{
+    add(`Say "I want to eat ${fe}."`, [`我想吃${fz}。`,`我要吃${fz}。`]);
+    add(`Say "I like to eat ${fe}."`, `我喜欢吃${fz}。`);
+    add(`Ask "Do you want to eat ${fe}?"`, [`你想吃${fz}吗？`,`你要吃${fz}吗？`]);
+    add(`Say "I don't want to eat ${fe}."`, [`我不想吃${fz}。`,`我不要吃${fz}。`]);
+    add(`Say "${cap(fe)} is very delicious."`, `${fz}很好吃。`);
+    add(`Say "This ${fe} is delicious."`, `这个${fz}很好吃。`);
+    add(`Say "I don't eat ${fe}."`, `我不吃${fz}。`);
+  });
+
+  // ── DRINK TEMPLATES ──
+  D.forEach(([dz,de])=>{
+    add(`Say "I want to drink ${de}."`, [`我想喝${dz}。`,`我要喝${dz}。`]);
+    add(`Ask "Do you want to drink ${de}?"`, [`你想喝${dz}吗？`,`你要喝${dz}吗？`]);
+    add(`Say "I like to drink ${de}."`, `我喜欢喝${dz}。`);
+    add(`Say "I don't drink ${de}."`, `我不喝${dz}。`);
+    add(`Say "Please give me some ${de}."`, `请给我${dz}。`);
+    add(`Say "She drinks ${de}."`, `她喝${dz}。`);
+  });
+
+  // ── MEAL TEMPLATES ──
+  M.forEach(([mz,me])=>{
+    add(`Ask "Did you eat ${me}?"`, `你吃${mz}了吗？`);
+    add(`Say "I haven't eaten ${me} yet."`, [`我没吃${mz}。`,`我没有吃${mz}。`]);
+    add(`Say "I want to eat ${me}."`, [`我想吃${mz}。`,`我要吃${mz}。`]);
+    add(`Say "Let's eat ${me}."`, `我们吃${mz}吧。`);
+    add(`Say "I eat ${me} at home."`, `我在家吃${mz}。`);
+  });
+
+  // ── PLACE TEMPLATES ──
+  P.forEach(([pz,pe])=>{
+    add(`Say "I'm going to ${pe}."`, `我去${pz}。`);
+    add(`Ask "Are you going to ${pe}?"`, `你去${pz}吗？`);
+    add(`Say "I'm at ${pe}."`, `我在${pz}。`);
+    add(`Ask "Are you at ${pe}?"`, `你在${pz}吗？`);
+    add(`Say "I don't want to go to ${pe}."`, [`我不想去${pz}。`,`我不要去${pz}。`]);
+    add(`Ask "Where is ${pe}?"`, `${pz}在哪里？`);
+    add(`Say "${cap(pe)} is very big."`, `${pz}很大。`);
+  });
+
+  // ── TIME + PLACE ──
+  Days.forEach(([dz,de])=>{
+    const past=dz==='昨天';
+    P.forEach(([pz,pe])=>{
+      const en=past?`Say "${de} I went to ${pe}."`:`Say "${de} I'm going to ${pe}."`;
+      add(en,`${dz}我去${pz}。`);
+    });
+  });
+
+  // ── TIME + ACTIVITY ──
+  Days.forEach(([dz,de])=>{
+    const past=dz==='昨天', future=dz==='明天', today=dz==='今天';
+    ToD.forEach(([tz,te])=>{
+      const teClean=te.replace('in the ','').replace(' (a.m.)','');
+      const dayTime=today?`This ${teClean}`:`${de} ${teClean}`;
+      const studyEn=past?`${dayTime}, I studied.`:future?`${dayTime}, I will study.`:`${dayTime}, I'm studying.`;
+      const eatEn=past?`${dayTime}, I ate.`:future?`${dayTime}, I will eat.`:`${dayTime}, I'm eating.`;
+      add(`Say "${studyEn}"`,`${dz}${tz}我学习。`);
+      add(`Say "${eatEn}"`,`${dz}${tz}我吃饭。`);
+    });
+  });
+
+  // ── BUYING TEMPLATES ──
+  B.forEach(([bz,be])=>{
+    add(`Say "I want to buy ${be}."`, [`我想买${bz}。`,`我要买${bz}。`]);
+    add(`Ask "Do you want to buy ${be}?"`, `你想买${bz}吗？`);
+    add(`Say "I don't want to buy ${be}."`, [`我不想买${bz}。`,`我不要买${bz}。`]);
+    add(`Ask "How much does ${be} cost?"`, `${bz}多少钱？`);
+  });
+
+
+  // ── ADJECTIVE: THINGS (logically matched with proper measure words) ──
+  const adjPairs=[
+    // Weather — hot/cold/good makes sense
+    [['今天天气',"Today's weather"],[['好','good'],['热','hot'],['冷','cold'],['不好','not great']]],
+    [['明天天气',"Tomorrow's weather"],[['好','good'],['热','hot'],['冷','cold']]],
+    // Food — delicious/hot/cold/expensive/cheap
+    [['这个菜',"This dish"],[['好吃','delicious'],['热','hot'],['冷','cold'],['贵','expensive'],['便宜','cheap']]],
+    [['那个菜',"That dish"],[['好吃','delicious'],['热','hot'],['贵','expensive'],['便宜','cheap']]],
+    [['这个苹果',"This apple"],[['好吃','delicious'],['大','big'],['小','small'],['贵','expensive'],['便宜','cheap']]],
+    [['这个水果',"This fruit"],[['好吃','delicious'],['贵','expensive'],['便宜','cheap']]],
+    [['这个米饭',"This rice"],[['好吃','delicious'],['热','hot'],['多','a lot'],['少','very little']]],
+    // Books — good/expensive/cheap/new
+    [['这本书',"This book"],[['好看','good'],['贵','expensive'],['便宜','cheap'],['新','new']]],
+    [['那本书',"That book"],[['好看','good'],['贵','expensive'],['新','new']]],
+    // Clothes — beautiful/nice-looking/expensive/cheap/new/big/small
+    [['这件衣服',"This piece of clothing"],[['漂亮','beautiful'],['好看','nice-looking'],['贵','expensive'],['便宜','cheap'],['新','new'],['大','big'],['小','small']]],
+    [['那件衣服',"That piece of clothing"],[['漂亮','beautiful'],['好看','nice-looking'],['贵','expensive'],['新','new']]],
+    // Movie — good/fun (not hot, cold, expensive)
+    [['这个电影',"This movie"],[['好看','good'],['好玩儿','fun']]],
+    [['那个电影',"That movie"],[['好看','good'],['好玩儿','fun']]],
+    // School — good/big/small
+    [['我的学校',"My school"],[['好','good'],['大','big'],['小','small']]],
+    [['这个学校',"This school"],[['好','good'],['大','big'],['小','small']]],
+    // Restaurant — good/expensive/cheap/big/small
+    [['这个饭店',"This restaurant"],[['好','good'],['贵','expensive'],['便宜','cheap'],['大','big'],['小','small']]],
+    [['那个饭店',"That restaurant"],[['好','good'],['贵','expensive'],['大','big']]],
+    // Supermarket/shop
+    [['这个超市',"This supermarket"],[['大','big'],['好','good']]],
+    [['这个商店',"This store"],[['大','big'],['小','small'],['好','good']]],
+    // Cat/dog — pretty/big/small (not hot/cold/expensive)
+    [['这只猫',"This cat"],[['漂亮','pretty'],['好看','cute-looking'],['大','big'],['小','small']]],
+    [['那只猫',"That cat"],[['漂亮','pretty'],['好看','cute-looking'],['大','big'],['小','small']]],
+    [['这只狗',"This dog"],[['漂亮','pretty'],['好看','cute-looking'],['大','big'],['小','small']]],
+    [['那只狗',"That dog"],[['漂亮','pretty'],['好看','cute-looking'],['大','big'],['小','small']]],
+    // Phone/computer — new/expensive/nice-looking/big/small
+    [['这个手机',"This phone"],[['新','new'],['贵','expensive'],['好看','nice-looking'],['大','big'],['小','small']]],
+    [['那个手机',"That phone"],[['新','new'],['贵','expensive'],['好看','nice-looking']]],
+    [['这个电脑',"This computer"],[['新','new'],['贵','expensive'],['好看','nice-looking'],['大','big'],['小','small']]],
+    // Song — only nice to listen to
+    [['这个歌',"This song"],[['好听','nice to listen to']]],
+    [['那个歌',"That song"],[['好听','nice to listen to']]],
+    // Tea — hot/cold/good/expensive/cheap
+    [['这个茶',"This tea"],[['好','good'],['热','hot'],['冷','cold'],['贵','expensive'],['便宜','cheap']]],
+    // Company — big/good
+    [['这个公司',"This company"],[['大','big'],['好','good']]],
+    [['我的公司',"My company"],[['大','big'],['好','good'],['忙','busy']]],
+    // Room — big/small
+    [['这个房间',"This room"],[['大','big'],['小','small'],['好看','nice-looking'],['新','new']]],
+  ];
+  adjPairs.forEach(([[subz,sube],adjs])=>{
+    adjs.forEach(([az,ae])=>{
+      add(`Say "${sube} is very ${ae}."`,`${subz}很${az}。`);
+      add(`Ask "Is ${sube.toLowerCase()} very ${ae}?"`,`${subz}很${az}吗？`);
+    });
+  });
+
+  // ── ADJECTIVE: PEOPLE (only logically valid adjectives) ──
+  const pplAdj=[['好','nice'],['漂亮','beautiful'],['高兴','happy'],['忙','busy'],['好看','good-looking']];
+  Ppl.slice(0,9).forEach(([pz,pe])=>{
+    pplAdj.forEach(([az,ae])=>{
+      // Skip 漂亮 for male subjects
+      if(az==='漂亮'&&(pz==='他'||pz==='我哥哥'||pz==='我弟弟')) return;
+      add(`Say "${pe} is very ${ae}."`,`${pz}很${az}。`);
+    });
+  });
+
+  // ── WEATHER ──
+  add("Ask 'How's the weather today?'",'今天天气怎么样？');
+  add("Say 'The weather today is very good.'",'今天天气很好。');
+  add("Say 'The weather today is not good.'",'今天天气不好。');
+  add("Say 'Today is very hot.'",'今天很热。');
+  add("Say 'Today is very cold.'",'今天很冷。');
+  add("Say 'It's raining.'",['下雨了。','今天下雨。']);
+  add("Say 'It's snowing.'",['下雪了。','今天下雪。']);
+  add("Ask 'Is it cold today?'",'今天冷吗？');
+  add("Ask 'Is it hot today?'",'今天热吗？');
+  add("Say 'The weather tomorrow will be good.'",'明天天气很好。');
+  add("Say 'Yesterday was very cold.'",'昨天很冷。');
+  add("Say 'It's raining today.'",'今天下雨。');
+  add("Say 'It snowed yesterday.'",'昨天下雪了。');
+  add("Say 'Today is not hot.'",'今天不热。');
+  add("Say 'The weather here is very good.'",'这里的天气很好。');
+
+  // ── SCHOOL ──
+  add("Say 'I go to school today.'",'我今天去学校。');
+  add("Ask 'Do you go to school today?'",'你今天去学校吗？');
+  add("Say 'I have class today.'",'我今天上课。');
+  add("Say 'I don't have class today.'",'我今天不上课。');
+  add("Say 'I study Chinese.'",'我学汉语。');
+  add("Say 'I am learning Chinese.'",['我在学汉语。','我正在学汉语。']);
+  add("Ask 'Do you study Chinese?'",'你学汉语吗？');
+  add("Say 'My Chinese teacher is very good.'",'我的汉语老师很好。');
+  add("Say 'I like to read books.'",['我喜欢看书。','我喜欢读书。']);
+  add("Say 'My school is very big.'",'我的学校很大。');
+  add("Say 'I go to university.'",'我上大学。');
+  add("Say 'Class is over.'",'下课了。');
+  add("Say 'Class starts now.'",'现在上课。');
+  add("Say 'I go to school in the morning.'",'我早上去学校。');
+  add("Ask 'When do you have class?'",'你什么时候上课？');
+  add("Say 'I have class in the morning.'",'我上午上课。');
+  add("Say 'I write Chinese characters.'",'我写汉字。');
+  add("Say 'There are many students at school.'",'学校有很多学生。');
+  add("Say 'I like my school.'",'我喜欢我的学校。');
+  add("Say 'Chinese characters are not easy to learn.'",'汉字不好学。');
+  add("Ask 'Do you study at home?'",'你在家学习吗？');
+  add("Say 'I go home after class.'",'我下课回家。');
+  add("Say 'I read Chinese.'",'我读汉语。');
+  add("Say 'I can write Chinese characters.'",'我会写汉字。');
+  add("Ask 'Can you write Chinese characters?'",'你会写汉字吗？');
+  add("Say 'My school is in China.'",'我的学校在中国。');
+  add("Say 'I go to school every morning.'",'我早上上学。');
+  add("Say 'My teacher has many books.'",'我的老师有很多书。');
+
+  // ── WORK ──
+  add("Say 'I go to work today.'",'我今天上班。');
+  add("Say 'I don't go to work today.'",'我今天不上班。');
+  add("Ask 'Are you at work?'",'你上班吗？');
+  add("Say 'I work at a company.'",'我在公司工作。');
+  add("Ask 'Where do you work?'",'你在哪里工作？');
+  add("Say 'I am very busy today.'",'我今天很忙。');
+  add("Ask 'Are you busy?'",'你忙吗？');
+  add("Say 'I get off work at 5 o'clock.'",'我五点下班。');
+  add("Say 'I got off work.'",'我下班了。');
+  add("Ask 'What time do you get off work?'",'你几点下班？');
+  add("Say 'My work is very busy.'",'我的工作很忙。');
+  add("Say 'I like my work.'",'我喜欢我的工作。');
+  add("Say 'My mom works at a company.'",'我妈妈在公司工作。');
+  add("Say 'I went to work today.'",'我今天上班了。');
+  add("Say 'He is at work.'",'他在上班。');
+
+  // ── HEALTH ──
+  add("Say 'I am sick.'",['我生病了。','我病了。']);
+  add("Ask 'Are you sick?'",'你生病了吗？');
+  add("Say 'I need to see a doctor.'",'我要看病。');
+  add("Say 'I'm going to the hospital.'",'我去医院。');
+  add("Say 'The doctor is very good.'",'医生很好。');
+  add("Say 'I'm not feeling well today.'",'我今天不好。');
+  add("Say 'My friend is sick.'",['我的朋友生病了。','我朋友病了。']);
+  add("Say 'Please rest.'",'请休息。');
+  add("Say 'I need to rest.'",'我要休息。');
+  add("Say 'I'm not sick.'",'我没有生病。');
+  add("Ask 'Are you okay?'",'你好吗？');
+  add("Say 'She is sick today.'",'她今天生病了。');
+
+  // ── DAILY ACTIVITIES ──
+  add("Ask 'What time do you get up?'",'你几点起床？');
+  add("Say 'I get up at 7.'",'我七点起床。');
+  add("Say 'I got up early today.'",'我今天起床很早。');
+  add("Say 'I want to sleep.'",'我想睡觉。');
+  add("Say 'I'm going to sleep.'",'我去睡觉了。');
+  add("Say 'I'm sleeping.'",'我在睡觉。');
+  add("Ask 'Are you sleeping?'",'你在睡觉吗？');
+  add("Say 'I want to rest.'",'我想休息。');
+  add("Say 'I am resting.'",'我在休息。');
+  add("Say 'I want to play.'",'我想玩。');
+  add("Ask 'Do you want to play?'",'你想玩吗？');
+  add("Say 'Let's play.'",'我们玩吧。');
+  add("Say 'I'm cooking.'",'我在做饭。');
+  add("Say 'I want to cook.'",'我想做饭。');
+  add("Ask 'Can you cook?'",'你会做饭吗？');
+  add("Say 'I can cook.'",'我会做饭。');
+  add("Say 'I can't cook.'",'我不会做饭。');
+  add("Say 'My mom is cooking.'",'我妈妈在做饭。');
+  add("Ask 'Who is cooking?'",'谁在做饭？');
+  add("Say 'Dad is cooking.'",'爸爸在做饭。');
+  add("Say 'I like to sing.'",'我喜欢唱歌。');
+  add("Ask 'Do you like to sing?'",'你喜欢唱歌吗？');
+  add("Say 'This song is very nice.'",'这个歌很好听。');
+  add("Say 'Let's sing.'",'我们唱歌吧。');
+  add("Say 'She sings very well.'",'她唱歌很好。');
+  add("Say 'I like watching TV.'",'我喜欢看电视。');
+  add("Say 'I am watching TV.'",'我在看电视。');
+  add("Ask 'Are you watching TV?'",'你在看电视吗？');
+  add("Say 'I am reading a book.'",'我在看书。');
+  add("Say 'She is reading.'",'她在看书。');
+  add("Say 'I like to listen to songs.'",'我喜欢听歌。');
+  add("Ask 'Did you hear that?'",'你听见了吗？');
+  add("Say 'I didn't hear.'",'我没听见。');
+  add("Say 'I heard it.'",'我听见了。');
+  add("Ask 'What are you doing?'",'你在做什么？');
+  add("Say 'I am writing.'",'我在写字。');
+  add("Say 'Please write your name.'",'请写你的名字。');
+  add("Say 'She writes very well.'",'她写得很好。');
+
+  // ── TRANSPORT ──
+  add("Say 'I go to school by car.'",'我开车去学校。');
+  add("Ask 'Can you drive?'",'你会开车吗？');
+  add("Say 'I can drive.'",'我会开车。');
+  add("Say 'I cannot drive.'",'我不会开车。');
+  add("Say 'I take a taxi.'",'我坐出租车。');
+  add("Say 'I take the train.'",'我坐火车。');
+  add("Say 'I fly to China.'",'我坐飞机去中国。');
+  add("Ask 'How do you get to work?'",'你怎么去上班？');
+  add("Say 'I go to work by car.'",'我开车上班。');
+  add("Ask 'How do you get to school?'",'你怎么去学校？');
+  add("Ask 'Are you driving?'",'你在开车吗？');
+  add("Say 'I take the train to school.'",'我坐火车去学校。');
+
+  // ── COMMUNICATION ──
+  add("Say 'I want to make a phone call.'",'我要打电话。');
+  add("Ask 'Can I make a phone call?'",'我可以打电话吗？');
+  add("Ask 'What is your phone number?'",'你的电话号码是什么？');
+  add("Say 'I'll call you.'",'我给你打电话。');
+  add("Say 'I'm on the phone.'",'我在打电话。');
+  add("Say 'My phone is new.'",'我的手机很新。');
+  add("Say 'She's watching TV.'",'她在看电视。');
+  add("Say 'He's on the phone.'",'他在打电话。');
+  add("Say 'I have a computer.'",'我有电脑。');
+
+  // ── MOVIES & ENTERTAINMENT ──
+  add("Ask 'Do you want to watch a movie?'",'你想看电影吗？');
+  add("Say 'I want to watch a movie.'",'我想看电影。');
+  add("Say 'This movie is very good.'",'这个电影很好看。');
+  add("Ask 'Is this movie good?'",'这个电影好看吗？');
+  add("Say 'Let's go watch a movie.'",'我们去看电影吧。');
+  add("Say 'The cinema is very big.'",'电影院很大。');
+  add("Say 'I like this movie.'",'我喜欢这个电影。');
+  add("Say 'I don't like that movie.'",'我不喜欢那个电影。');
+  add("Say 'I'm watching a movie.'",'我在看电影。');
+
+  // ── CLOTHES ──
+  add("Ask 'How much is this piece of clothing?'",'这件衣服多少钱？');
+  add("Say 'This piece of clothing is beautiful.'",'这件衣服很漂亮。');
+  add("Ask 'Is this clothing expensive?'",'这件衣服贵吗？');
+  add("Say 'I want to buy this clothing.'",['我想买这件衣服。','我要买这件衣服。']);
+  add("Say 'I'm wearing new clothes today.'",'我今天穿新衣服。');
+  add("Say 'Her clothes are beautiful.'",'她的衣服很漂亮。');
+  add("Ask 'Do you like this clothing?'",'你喜欢这件衣服吗？');
+  add("Say 'This clothing is not expensive.'",'这件衣服不贵。');
+
+  // ── PETS ──
+  add("Ask 'Do you have a dog?'",'你有狗吗？');
+  add("Say 'I have a dog.'",'我有一只狗。');
+  add("Say 'I don't have a dog.'",'我没有狗。');
+  add("Ask 'Do you have a cat?'",'你有猫吗？');
+  add("Say 'I have a cat.'",'我有一只猫。');
+  add("Say 'My dog is very big.'",'我的狗很大。');
+  add("Say 'My cat is small.'",'我的猫很小。');
+  add("Say 'This cat is very cute.'",'这只猫很好看。');
+  add("Say 'I like cats.'",'我喜欢猫。');
+  add("Say 'I like dogs.'",'我喜欢狗。');
+
+  // ── ASKING / GIVING ──
+  add("Say 'Please give me some water.'",'请给我水。');
+  add("Say 'Please give me a book.'",'请给我书。');
+  add("Say 'I want this one.'",'我要这个。');
+  add("Say 'I don't want that one.'",'我不要那个。');
+  add("Say 'I want these ones.'",'我要这些。');
+  add("Say 'Please give this to her.'",'请给她这个。');
+  add("Say 'I'll give you this.'",'我给你这个。');
+  add("Say 'Give me two.'",'给我两个。');
+  add("Ask 'Can you give me one?'",'你可以给我一个吗？');
+
+  // ── CURRENT ACTIONS ──
+  add("Say 'I am eating.'",'我在吃饭。');
+  add("Say 'I am drinking water.'",'我在喝水。');
+  add("Say 'He is working.'",'他在工作。');
+  add("Say 'We are eating.'",'我们在吃饭。');
+  add("Say 'I am studying.'",'我在学习。');
+  add("Say 'She is studying Chinese.'",'她在学汉语。');
+  add("Say 'She is cooking.'",'她在做饭。');
+  add("Say 'They are eating.'",'他们在吃饭。');
+  add("Say 'We are all eating.'",'我们都在吃饭。');
+  add("Say 'Dad is reading.'",'爸爸在看书。');
+  add("Say 'Mom is cooking.'",'妈妈在做饭。');
+  add("Say 'He is sleeping.'",'他在睡觉。');
+  add("Say 'She is singing.'",'她在唱歌。');
+
+  // ── 也/都 PATTERNS ──
+  add("Say 'I also want to go.'",'我也想去。');
+  add("Say 'I also like this.'",'我也喜欢这个。');
+  add("Say 'She also wants to eat.'",'她也想吃。');
+  add("Say 'He also went.'",'他也去了。');
+  add("Say 'We all like this.'",'我们都喜欢这个。');
+  add("Say 'Everyone is here.'",'大家都来了。');
+  add("Say 'We all go to school.'",'我们都去学校。');
+  add("Say 'Everyone is eating.'",'大家都在吃饭。');
+  add("Say 'We are all very busy.'",'我们都很忙。');
+  add("Say 'They are all students.'",'他们都是学生。');
+  add("Say 'I also like Chinese food.'",'我也喜欢中国菜。');
+  add("Say 'She also has a dog.'",'她也有狗。');
+
+  // ── GOING & COMING ──
+  add("Say 'I'm coming.'",'我来了。');
+  add("Ask 'Where are you going?'",'你去哪里？');
+  add("Say 'I'm going home.'",'我回家。');
+  add("Ask 'Are you going home?'",'你回家吗？');
+  add("Say 'He went home.'",'他回家了。');
+  add("Say 'She's coming.'",'她来了。');
+  add("Say 'I'll come tomorrow.'",'我明天来。');
+  add("Ask 'Will you come tomorrow?'",'你明天来吗？');
+  add("Say 'I came yesterday.'",'我昨天来了。');
+  add("Say 'Come to my home.'",'来我家。');
+  add("Say 'Let's go.'",'我们去吧。');
+  add("Say 'I'm going now.'",'我去了。');
+  add("Say 'She went to the store.'",'她去商店了。');
+  add("Say 'We're going to eat.'",'我们去吃饭。');
+  add("Say 'He came to school today.'",'他今天来学校了。');
+
+  // ── QUESTIONS ──
+  add("Ask 'What do you want to eat?'",'你想吃什么？');
+  add("Ask 'What do you want to drink?'",'你想喝什么？');
+  add("Ask 'What do you want to buy?'",'你想买什么？');
+  add("Ask 'Where do you want to go?'",'你想去哪里？');
+  add("Ask 'Who is this?'",'这是谁？');
+  add("Ask 'Whose is this?'",'这是谁的？');
+  add("Ask 'Which one do you want?'",'你要哪个？');
+  add("Ask 'What is he doing?'",'他在做什么？');
+  add("Ask 'What are they doing?'",'他们在做什么？');
+  add("Ask 'Where are they?'",'他们在哪里？');
+  add("Ask 'Who is that?'",'那是谁？');
+  add("Ask 'What day is tomorrow?'",'明天星期几？');
+  add("Ask 'What month is it?'",'现在几月？');
+  add("Ask 'What is today's date?'",'今天几号？');
+  add("Ask 'What time is it now?'",'现在几点？');
+  add("Ask 'What do you like?'",'你喜欢什么？');
+  add("Ask 'What do you want?'",'你要什么？');
+  add("Ask 'How do you feel about this?'",'你觉得怎么样？');
+  add("Ask 'How is the food?'",'菜怎么样？');
+  add("Ask 'How is the weather today?'",'今天天气怎么样？');
+
+  // ── CAN / CANNOT ──
+  add("Ask 'Can you speak Chinese?'",'你会说汉语吗？');
+  add("Say 'I can speak Chinese.'",'我会说汉语。');
+  add("Say 'I cannot speak Chinese.'",'我不会说汉语。');
+  add("Say 'I can speak a little Chinese.'",'我会说一点儿汉语。');
+  add("Ask 'May I sit here?'",'我可以坐这里吗？');
+  add("Say 'Yes, please sit.'",['可以，请坐。','可以。请坐。']);
+  add("Ask 'May I come in?'",'我可以进来吗？');
+  add("Say 'You may come in.'",'你可以进来。');
+  add("Ask 'Can you read Chinese?'",'你会看汉语吗？');
+  add("Say 'I can read Chinese.'",'我会看汉语。');
+  add("Ask 'Can you come tomorrow?'",'你明天可以来吗？');
+  add("Say 'I can come tomorrow.'",'我明天可以来。');
+
+  // ── LOCATION ──
+  add("Ask 'Where are you?'",'你在哪里？');
+  add("Say 'I'm at home.'",'我在家。');
+  add("Say 'She's at school.'",'她在学校。');
+  add("Say 'He's at work.'",['他在公司。','他在上班。']);
+  add("Say 'The store is over there.'",'商店在那里。');
+  add("Say 'The hospital is here.'",'医院在这里。');
+  add("Say 'The school is not here.'",'学校不在这里。');
+  add("Ask 'Is the store here?'",'商店在这里吗？');
+  add("Say 'I'm over here.'",'我在这里。');
+  add("Ask 'Where is the bookstore?'",'书店在哪里？');
+  add("Say 'The cinema is over there.'",'电影院在那里。');
+
+  // ── NUMBERS & MONEY ──
+  add("Ask 'How much does this cost?'",'这个多少钱？');
+  add("Say 'This costs 10 yuan.'",['这个十块。','这个十元。']);
+  add("Say 'This costs 50 yuan.'",['这个五十块。','这个五十元。']);
+  add("Say 'This costs 100 yuan.'",['这个一百块。','这个一百元。']);
+  add("Say 'That's too expensive.'",'太贵了。');
+  add("Say 'That's very cheap.'",'很便宜。');
+  add("Ask 'Is there a cheaper one?'",'有便宜的吗？');
+  add("Say 'I want two.'",'我要两个。');
+  add("Say 'Give me one.'",'给我一个。');
+  add("Say 'I want three books.'",'我要三本书。');
+  add("Ask 'How many do you want?'",['你要几个？','你要多少？']);
+  add("Say 'I have 100 yuan.'",'我有一百块。');
+  add("Say 'I don't have money.'",'我没有钱。');
+  add("Ask 'How many people are there?'",'有几个人？');
+  add("Say 'There are 5 people.'",'有五个人。');
+  add("Ask 'Do you have money?'",'你有钱吗？');
+  add("Say 'I have money.'",'我有钱。');
+  add("Say 'I have a book.'",'我有一本书。');
+  add("Say 'I have many books.'",'我有很多书。');
+
+  // ── HAVE ──
+  add("Ask 'Do you have a phone?'",'你有手机吗？');
+  add("Say 'I have a phone.'",'我有手机。');
+  add("Ask 'Do you have a computer?'",'你有电脑吗？');
+  add("Say 'I have a car.'",'我有车。');
+  add("Ask 'Do you have a car?'",'你有车吗？');
+  add("Say 'I don't have a car.'",'我没有车。');
+  add("Say 'The restaurant has a lot of food.'",'饭店有很多菜。');
+  add("Say 'The supermarket has everything.'",'超市有很多东西。');
+
+  // ── OPINIONS ──
+  add("Say 'I think this is very good.'",'我觉得这个很好。');
+  add("Say 'I think it's delicious.'",'我觉得这个很好吃。');
+  add("Say 'I think he is nice.'",'我觉得他很好。');
+  add("Say 'I think this is expensive.'",'我觉得这个太贵了。');
+  add("Say 'I like Chinese food very much.'",'我很喜欢中国菜。');
+  add("Ask 'Do you like Chinese food?'",'你喜欢中国菜吗？');
+  add("Say 'I like this one.'",'我喜欢这个。');
+  add("Say 'I don't like that one.'",'我不喜欢那个。');
+  add("Say 'I love you.'",'我爱你。');
+  add("Say 'I miss you.'",'我想你。');
+  add("Say 'I like you.'",'我喜欢你。');
+  add("Say 'I think Chinese is easy to learn.'",'我觉得汉语很好学。');
+  add("Ask 'Do you like this book?'",'你喜欢这本书吗？');
+  add("Say 'I like this book very much.'",'我很喜欢这本书。');
+  add("Ask 'Do you like singing?'",'你喜欢唱歌吗？');
+
+  // ── NEGATIVES ──
+  add("Say 'I'm not going.'",'我不去。');
+  add("Say 'I'm not eating.'",'我不吃。');
+  add("Say 'I don't want this.'",'我不要这个。');
+  add("Say 'That's not good.'",'那个不好。');
+  add("Say 'This is not expensive.'",'这个不贵。');
+  add("Say 'This food is not delicious.'",'这个菜不好吃。');
+  add("Say 'He's not coming.'",'他不来。');
+  add("Say 'I haven't eaten yet.'",'我还没吃。');
+  add("Say 'He hasn't come yet.'",'他还没来。');
+  add("Say 'I haven't bought it yet.'",'我还没买。');
+  add("Say 'She's not going.'",'她不去。');
+  add("Say 'I'm not busy today.'",'我今天不忙。');
+
+  // ── SUGGESTIONS (吧) ──
+  add("Say 'Let's eat.'",'我们吃饭吧。');
+  add("Say 'Let's go to the restaurant.'",'我们去饭店吧。');
+  add("Say 'Let's go watch a movie.'",'我们去看电影吧。');
+  add("Say 'Let's go home.'",'我们回家吧。');
+  add("Say 'Let's drink tea.'",'我们喝茶吧。');
+  add("Say 'You should rest.'",'你休息吧。');
+  add("Say 'Let's buy some fruit.'",'我们买水果吧。');
+  add("Say 'Let's go to the bookstore.'",'我们去书店吧。');
+
+  // ── COMPLIMENTS ──
+  add("Say 'Your Chinese is very good.'",'你的汉语很好。');
+  add("Ask 'Is my Chinese okay?'",'我的汉语好吗？');
+  add("Say 'Your clothes are very beautiful.'",'你的衣服很漂亮。');
+  add("Say 'This book is very good.'",'这本书很好看。');
+  add("Say 'The food here is very delicious.'",'这里的菜很好吃。');
+  add("Say 'This restaurant is very good.'",'这个饭店很好。');
+  add("Say 'Her Chinese is very good.'",'她的汉语很好。');
+
+  // ── FOOD COMBOS with 和 ──
+  add("Say 'I want rice and vegetables.'",'我要米饭和菜。');
+  add("Say 'I want noodles and eggs.'",'我要面条儿和鸡蛋。');
+  add("Say 'I want bread and milk.'",'我要面包和牛奶。');
+  add("Say 'I want tea and bread.'",'我要茶和面包。');
+  add("Say 'I want apples and water.'",'我要苹果和水。');
+  add("Say 'I have a dog and a cat.'",'我有狗和猫。');
+  add("Say 'My mom and dad are at home.'",'我妈妈和爸爸在家。');
+
+  // ── TIME EXPRESSIONS ──
+  add("Say 'It is now 8 o'clock.'",['现在八点。','八点了。']);
+  add("Say 'It is 12 noon.'",'现在十二点。');
+  add("Say 'It is 6 in the evening.'",'晚上六点。');
+  add("Ask 'What day is it today?'",'今天星期几？');
+  add("Say 'Today is Monday.'",['今天是星期一。','今天星期一。']);
+  add("Say 'Today is Friday.'",['今天是星期五。','今天星期五。']);
+  add("Say 'Today is Sunday.'",['今天是星期日。','今天是星期天。','今天星期日。','今天星期天。']);
+  add("Say 'Today is the 1st.'",'今天一号。');
+  add("Say 'This year is very busy.'",'今年很忙。');
+  add("Say 'Last year I was at school.'",'去年我在学校。');
+  add("Say 'I'll go tomorrow.'",'我明天去。');
+  add("Say 'He came yesterday.'",'他昨天来了。');
+
+  // ── 还 (still / even more) ──
+  add("Say 'I still want to eat.'",'我还想吃。');
+  add("Say 'She is still at school.'",'她还在学校。');
+  add("Ask 'Are you still here?'",'你还在这里吗？');
+  add("Say 'He still hasn't come.'",'他还没来。');
+  add("Say 'I also want to drink tea.'",'我还想喝茶。');
+  add("Say 'I'm still eating.'",'我还在吃。');
+
+  // ── SLEEP ──
+  add("Ask 'Did you sleep well?'",'你睡得好吗？');
+  add("Say 'I slept well.'",'我睡得很好。');
+  add("Say 'I didn't sleep well.'",'我睡得不好。');
+
+  // ── RESTAURANT SCENARIOS ──
+  add("Say 'I want to order food.'",'我想点菜。');
+  add("Ask 'What would you like to eat?'",'你想吃什么？');
+  add("Ask 'Do you want rice?'",'你要米饭吗？');
+  add("Ask 'Do you want noodles?'",'你要面条儿吗？');
+  add("Say 'Let's go eat.'",'我们去吃饭吧。');
+  add("Say 'I've already eaten.'",'我吃饭了。');
+  add("Ask 'Have you eaten yet?'",'你吃饭了吗？');
+  add("Say 'The food here is very good.'",'这里的菜很好。');
+
+  // ── SHOPPING SCENARIOS ──
+  add("Say 'I'm going shopping.'",'我去买东西。');
+  add("Say 'I need to buy some things.'",'我要买一些东西。');
+  add("Ask 'How many do you want?'",'你要多少？');
+  add("Ask 'Do you have this?'",'你有这个吗？');
+  add("Say 'I'll take this one.'",'我要这个。');
+  add("Say 'Do you have a bigger one?'",'有大的吗？');
+  add("Say 'Do you have a smaller one?'",'有小的吗？');
+
+  // ── MONTHS ──
+  ['一','二','三','四','五','六','七','八','九','十','十一','十二'].forEach((m,i)=>{
+    const names=['January','February','March','April','May','June',
+                 'July','August','September','October','November','December'];
+    add(`Say "${names[i]}" in Chinese.`,`${m}月。`);
+    add(`Say "This is ${names[i]}."`,`现在是${m}月。`);
+  });
+
+  // ── DAYS OF WEEK ──
+  ['一','二','三','四','五','六'].forEach((d,i)=>{
+    const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    add(`Say "${days[i]}" in Chinese.`,`星期${d}。`);
+    add(`Say "Today is ${days[i]}."`,['今天是星期'+d+'。','今天星期'+d+'。']);
+  });
+  add("Say 'Sunday' in Chinese.",['星期日。','星期天。']);
+  add("Say 'Today is Sunday.'",['今天是星期日。','今天是星期天。','今天星期日。','今天星期天。']);
+
+  // ── NUMBERS ──
+  ['零','一','二','三','四','五','六','七','八','九','十'].forEach((n,i)=>{
+    add(`Say the number ${i} in Chinese.`,`${n}。`);
+  });
+  [[11,'十一'],[12,'十二'],[15,'十五'],[18,'十八'],[20,'二十'],
+   [21,'二十一'],[30,'三十'],[50,'五十'],[100,'一百'],
+   [200,'两百'],[1000,'一千']].forEach(([n,z])=>{
+    add(`Say the number ${n} in Chinese.`,`${z}。`);
+  });
+
+  // ── "THERE IS / ARE" ──
+  add("Say 'There is a bookstore here.'",'这里有书店。');
+  add("Say 'There is no one here.'",'这里没有人。');
+  add("Say 'There are many people here.'",'这里有很多人。');
+  add("Say 'There is someone at the door.'",'门那里有人。');
+  add("Say 'There is water here.'",'这里有水。');
+
+  // ── EXTRA USEFUL PATTERNS ──
+  add("Say 'I am very happy today.'",'我今天很高兴。');
+  add("Say 'She is very happy.'",'她很高兴。');
+  add("Ask 'Are you happy?'",'你高兴吗？');
+  add("Say 'I'm very happy to meet you.'",'很高兴认识你。');
+  add("Say 'Chinese food is very delicious.'",'中国菜很好吃。');
+  add("Ask 'Is Chinese food delicious?'",'中国菜好吃吗？');
+  add("Say 'I like Chinese food.'",'我喜欢中国菜。');
+  add("Say 'I want to go to China.'",'我想去中国。');
+  add("Ask 'Do you want to go to China?'",'你想去中国吗？');
+  add("Say 'She is Chinese.'",'她是中国人。');
+  add("Say 'Please ask.'",['请问。']);
+  add("Say 'Please have some tea.'",'请喝茶。');
+  add("Say 'Please eat.'",'请吃饭。');
+  add("Say 'I'm going to look for him.'",'我去找他。');
+  add("Say 'She is looking for her phone.'",'她在找她的手机。');
+  add("Say 'I can't find it.'",'我找不到。');
+  add("Ask 'Did you find it?'",'你找到了吗？');
+  add("Say 'I want to ask a question.'",'我想问一个问题。');
+  add("Ask 'Did you ask the teacher?'",'你问老师了吗？');
+  add("Say 'I told her about it.'",'我问她了。');
+  // Let me replace:
+  add("Say 'He asked me.'",'他问我了。');
+  add("Say 'I asked her.'",'我问她了。');
+  add("Say 'She knows.'",['她知道。']);
+  add("Say 'He doesn't know.'",'他不知道。');
+  add("Ask 'Do you know where the hospital is?'",'你知道医院在哪里吗？');
+  add("Say 'I know where it is.'",'我知道在哪里。');
+  add("Say 'This is very interesting.'",'这个很好玩儿。');
+  add("Say 'That is very fun.'",'那个很好玩儿。');
+  add("Say 'I find this very interesting.'",'我觉得这个很好玩儿。');
+  add("Say 'My phone is inside.'",'我的手机在里面。');
+  add("Say 'The book is on the table.'",'书在桌子上。');
+  add("Say 'He is inside.'",'他在里面。');
+  add("Say 'She is outside.'",'她在外面。');
+  add("Say 'Please come outside.'",'请到外面来。');
+  add("Say 'I'm outside.'",'我在外面。');
+  add("Say 'I live in China.'",'我住在中国。');
+  add("Say 'I live at home.'",'我住在家里。');
+  add("Ask 'Where do you live?'",'你住在哪里？');
+  add("Say 'My family lives in China.'",'我的家人住在中国。');
+  add("Say 'I'm going to see the doctor.'",'我去看病。');
+  add("Say 'She went to the hospital.'",'她去医院了。');
+  add("Say 'He is at the hospital.'",'他在医院。');
+  add("Ask 'Do you know this person?'",'你认识这个人吗？');
+  add("Say 'I don't know this person.'",'我不认识这个人。');
+  add("Say 'I know her.'",['我认识她。']);
+  add("Say 'My friend can speak Chinese.'",'我的朋友会说汉语。');
+  add("Say 'She can read Chinese characters.'",'她会看汉字。');
+  add("Say 'He can't write Chinese.'",'他不会写汉字。');
+  add("Say 'I'm learning to drive.'",'我在学开车。');
+  add("Say 'He is learning Chinese.'",'他在学汉语。');
+  add("Say 'We are studying together.'",'我们在学习。');
+  add("Say 'I go to work by train.'",'我坐火车上班。');
+  add("Say 'She goes to school by car.'",'她开车去学校。');
+  add("Say 'He flies to China often.'",'他坐飞机去中国。');
+  add("Say 'I'm taking a taxi home.'",'我坐出租车回家。');
+
+  // ── 3RD PERSON FOOD & DRINK (pushes total past 1000) ──
+  const SmallPpl=[['他','He'],['她','She'],['我爸爸','Dad'],['我妈妈','Mom'],
+    ['我哥哥','My older brother'],['我姐姐','My older sister'],
+    ['我弟弟','My younger brother'],['我妹妹','My younger sister'],
+    ['老师','The teacher'],['朋友','My friend']];
+
+  SmallPpl.forEach(([pz,pe])=>{
+    F.slice(0,5).forEach(([fz,fe])=>{
+      add(`Say "${pe} likes to eat ${fe}."`,`${pz}喜欢吃${fz}。`);
+      add(`Say "${pe} doesn't want to eat ${fe}."`,`${pz}不想吃${fz}。`);
+    });
+    D.forEach(([dz,de])=>{
+      add(`Say "${pe} is drinking ${de}."`,`${pz}在喝${dz}。`);
+    });
+    P.slice(0,4).forEach(([plz,ple])=>{
+      add(`Say "${pe} is going to ${ple}."`,`${pz}去${plz}。`);
+    });
+  });
+
+  // ── EXTRA NUMBER/QUANTITY PATTERNS ──
+  [[1,'一'],[2,'两'],[3,'三'],[4,'四'],[5,'五'],[10,'十']].forEach(([n,nz])=>{
+    add(`Say "I want ${n} apple${n>1?'s':''}."`,`我要${nz}个苹果。`);
+    add(`Say "I have ${n} friend${n>1?'s':''}."`,`我有${nz}个朋友。`);
+    add(`Say "I want ${n} book${n>1?'s':''}."`,`我要${nz}本书。`);
+  });
+
+  // ── EXTRA DAILY PHRASES ──
+  add("Say 'I'm going out.'","我出去了。");
+  add("Say 'He came back.'",'他回来了。');
+  add("Say 'She went out.'",'她出去了。');
+  add("Say 'The book is here.'",'书在这里。');
+  add("Say 'My phone is over there.'",'我的手机在那里。');
+  add("Ask 'Is he here?'",'他在这里吗？');
+  add("Say 'I'm not here.'",'我不在这里。');
+  add("Say 'He is not at home.'",'他不在家。');
+  add("Say 'She is not at school.'",'她不在学校。');
+  add("Say 'I just arrived.'",'我到了。');
+  add("Say 'He arrived.'",'他到了。');
+  add("Ask 'Have you arrived?'",'你到了吗？');
+  add("Say 'I see it.'",'我看见了。');
+  add("Say 'I didn't see it.'",'我没看见。');
+  add("Say 'I see him.'",'我看见他了。');
+  add("Say 'Did you see her?'",'你看见她了吗？');
+  add("Say 'I can see you.'",'我可以看见你。');
+  add("Say 'The weather is good today, let's go out.'",['今天天气很好，我们出去吧。','今天天气很好。我们出去吧。']);
+  add("Say 'It's cold today.'",'今天很冷。');
+  add("Say 'I bought this today.'",'我今天买了这个。');
+  add("Say 'She bought new clothes.'",'她买了新衣服。');
+  add("Say 'He bought a computer.'",'他买了电脑。');
+  add("Say 'We bought a lot of fruit.'",'我们买了很多水果。');
+  add("Say 'I called you.'",'我给你打电话了。');
+  add("Say 'She called me.'",'她给我打电话了。');
+  add("Ask 'Did you call him?'",'你给他打电话了吗？');
+  add("Say 'I went to the store yesterday.'",'我昨天去商店了。');
+  add("Say 'She went to the hospital this morning.'",'她今天早上去医院了。');
+  add("Say 'We went to the cinema yesterday.'",'我们昨天去电影院了。');
+  add("Say 'I read this book.'",'我看了这本书。');
+  add("Say 'She wrote it.'",'她写了。');
+  add("Say 'He studied yesterday.'",'他昨天学习了。');
+  add("Say 'I drank tea this morning.'",'我今天早上喝茶了。');
+  add("Say 'She ate breakfast.'",'她吃早饭了。');
+  add("Ask 'Did he eat lunch?'",'他吃午饭了吗？');
+  add("Say 'They ate dinner.'",'他们吃晚饭了。');
+  add("Say 'I want to go out to eat.'",'我想出去吃饭。');
+  add("Say 'Let's go out to eat.'",'我们出去吃饭吧。');
+  add("Ask 'Do you want to go out to eat?'",'你想出去吃饭吗？');
+  add("Say 'I really like it here.'",'我很喜欢这里。');
+  add("Say 'She really likes China.'",'她很喜欢中国。');
+  add("Say 'He really likes Chinese food.'",'他很喜欢中国菜。');
+  add("Ask 'Do you really like this?'",'你真的喜欢这个吗？');
+  add("Say 'This is really good.'",'这个真好。');
+  add("Say 'She is really pretty.'",'她真漂亮。');
+  add("Say 'He is really busy.'",'他真忙。');
+  add("Say 'This is really delicious.'",'这个真好吃。');
+  add("Say 'I'm really happy today.'",'我今天真高兴。');
+
+  return S;
+}
+
+
+// ============================================================
+// SPEECH
+// ============================================================
+let zhVoice=null;
+function loadVoices(){
+  const voices=speechSynthesis.getVoices();
+  zhVoice=voices.find(v=>v.lang==='zh-TW')
+         ||voices.find(v=>v.lang==='zh-CN')
+         ||voices.find(v=>v.lang.startsWith('zh'))
+         ||null;
+}
+loadVoices();
+if(speechSynthesis.onvoiceschanged!==undefined) speechSynthesis.onvoiceschanged=loadVoices;
+
+function speakAnswer(){
+  if(!window.speechSynthesis||!currentAnswerText) return;
+  speechSynthesis.cancel();
+  const utt=new SpeechSynthesisUtterance(currentAnswerText);
+  utt.lang='zh-CN'; utt.rate=0.85;
+  if(zhVoice) utt.voice=zhVoice;
+  const btn=document.getElementById('fb-speak-btn');
+  btn.classList.add('speaking');
+  utt.onend=()=>btn.classList.remove('speaking');
+  utt.onerror=()=>btn.classList.remove('speaking');
+  speechSynthesis.speak(utt);
+}
+
+// ============================================================
+// APP STATE
+// ============================================================
+const STORAGE_KEY='hsk1_sentences_v1';
+let sentences=[], shuffled=[], current=0, userAnswer='', checked=false, currentAnswerText='';
+let score={r:0,w:0};
+
+function saveScore(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(score));}catch(e){}
+}
+function loadScore(){
+  try{
+    const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(s&&typeof s.r==='number') score=s;
+  }catch(e){}
+}
+
+function shuffle(a){
+  const r=[...a];
+  for(let i=r.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [r[i],r[j]]=[r[j],r[i]];
+  }
+  return r;
+}
+
+function norm(s){
+  return s.replace(/[。，？！、…,.?!\s]/g,'');
+}
+
+const charPinyinMap={};
+HSK1.forEach(([char,py])=>{ charPinyinMap[char]=py; });
+
+function getAnnotatedParts(sentence){
+  const clean=sentence.replace(/[。，？！、…\s]/g,'');
+  const chars=[...clean];
+  const parts=[];
+  let i=0;
+  while(i<chars.length){
+    let matched=false;
+    for(let len=Math.min(5,chars.length-i);len>=1;len--){
+      const sub=chars.slice(i,i+len).join('');
+      if(charPinyinMap[sub]){
+        parts.push({char:sub,py:charPinyinMap[sub]});
+        i+=len;matched=true;break;
+      }
+    }
+    if(!matched){parts.push({char:chars[i],py:''});i++;}
+  }
+  return parts;
+}
+
+function renderWithPinyin(sentence){
+  return getAnnotatedParts(sentence).map(({char,py})=>
+    `<span class="py-word"><span class="py-char">${char}</span><span class="py-text">${py}</span></span>`
+  ).join('');
+}
+
+// ============================================================
+// UI FUNCTIONS
+// ============================================================
+const input=document.getElementById('pinyin-input');
+
+function updateCandidates(){
+  const q=input.value;
+  const cands=getCandidates(q);
+  const box=document.getElementById('candidates');
+  if(!q||cands.length===0){
+    box.innerHTML='<span class="cand-placeholder">'+(q?'No matches':'Type pinyin below to see characters')+'</span>';
+    return;
+  }
+  box.innerHTML=cands.map(({char,py})=>
+    `<button class="cand-btn" onclick="selectCandidate('${char.replace(/'/g,"\\'")}')">
+      <span class="cand-char">${char}</span>
+    </button>`
+  ).join('');
+}
+
+function selectCandidate(char){
+  userAnswer+=char;
+  renderAnswer();
+  input.value='';
+  updateCandidates();
+  input.focus();
+}
+
+function addChar(c){
+  userAnswer+=c;
+  renderAnswer();
+}
+
+function doBackspace(){
+  if(input.value){
+    input.value=input.value.slice(0,-1);
+    updateCandidates();
+  } else if(userAnswer){
+    // Remove last character (handles multi-byte Chinese correctly)
+    userAnswer=[...userAnswer].slice(0,-1).join('');
+    renderAnswer();
+  }
+  input.focus();
+}
+
+function renderAnswer(){
+  const el=document.getElementById('answer-display');
+  if(checked){
+    el.innerHTML=`<span style="font-family:'Noto Serif SC',serif">${userAnswer}</span>`;
+  } else {
+    el.innerHTML=`<span style="font-family:'Noto Serif SC',serif">${userAnswer}</span><span class="cursor">|</span>`;
+  }
+}
+
+function showSentence(){
+  speechSynthesis.cancel();
+  const btn=document.getElementById('fb-speak-btn');
+  if(btn) btn.classList.remove('speaking');
+  const s=sentences[shuffled[current]];
+  document.getElementById('snum').textContent=`Sentence ${current+1} / ${shuffled.length}`;
+  document.getElementById('prompt').textContent=s.en;
+  document.getElementById('prog').style.width=((current+1)/shuffled.length*100)+'%';
+  document.getElementById('sr').textContent=score.r;
+  document.getElementById('sw').textContent=score.w;
+  document.getElementById('feedback').style.display='none';
+  document.getElementById('next-bar').style.display='none';
+  document.getElementById('hint-btn').textContent='Hint';
+  userAnswer=''; checked=false;
+  renderAnswer();
+  input.value='';
+  updateCandidates();
+  document.getElementById('content').scrollTop=0;
+}
+
+function showHint(){
+  const s=sentences[shuffled[current]];
+  const first=[...s.zh[0]].slice(0,2).join('');
+  document.getElementById('hint-btn').textContent='Starts: '+first+'…';
+}
+
+function checkAnswer(){
+  if(!userAnswer.trim()) return;
+  checked=true;
+  const s=sentences[shuffled[current]];
+  const u=norm(userAnswer);
+  const correct=s.zh.some(a=>norm(a)===u);
+  const fb=document.getElementById('feedback');
+  const fbl=document.getElementById('fb-label');
+  const fba=document.getElementById('fb-answer');
+  const fbalt=document.getElementById('fb-alt');
+  // Store plain Chinese characters only — no punctuation, no pinyin — for speech
+  currentAnswerText=s.zh[0].replace(/[。，？！、…\s]/g,'');
+
+  if(correct){
+    score.r++;
+    fb.className='feedback-card correct';
+    fbl.textContent='✓ Correct!';
+    fba.textContent=s.zh[0];
+    fbalt.textContent=s.zh.length>1?'Also accepted: '+s.zh.slice(1).join(' / '):'';
+    if(navigator.vibrate) navigator.vibrate(40);
+  } else {
+    score.w++;
+    fb.className='feedback-card wrong';
+    fbl.textContent='✗ Correct answer:';
+    fba.innerHTML=renderWithPinyin(s.zh[0]);
+    fbalt.textContent=s.zh.length>1?'Also accepted: '+s.zh.slice(1).join(' / '):'';
+    if(navigator.vibrate) navigator.vibrate([60,40,60]);
+  }
+  fb.style.display='block';
+  saveScore();
+  document.getElementById('sr').textContent=score.r;
+  document.getElementById('sw').textContent=score.w;
+  document.getElementById('next-bar').style.display='block';
+  renderAnswer();
+  // Hide IME area, show next button cleanly
+  document.getElementById('ime-area').style.display='none';
+  // Scroll feedback into view
+  setTimeout(()=>fb.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+}
+
+function nextSentence(){
+  document.getElementById('ime-area').style.display='';
+  current=(current+1)%shuffled.length;
+  if(current===0) shuffled=shuffle([...Array(sentences.length).keys()]);
+  showSentence();
+}
+
+function skipSentence(){
+  nextSentence();
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown',e=>{
+  if(e.target===input) return; // let input handle its own keys
+  if(e.key==='Enter'&&!checked) checkAnswer();
+  if(e.key==='Enter'&&checked) nextSentence();
+  if(e.key==='Backspace') doBackspace();
+});
+
+input.addEventListener('input',updateCandidates);
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const cands=getCandidates(input.value);
+    if(cands.length>0){selectCandidate(cands[0].char);}
+    else if(!input.value&&!checked){checkAnswer();}
+  }
+  if(e.key===' '&&input.value){
+    e.preventDefault();
+    const cands=getCandidates(input.value);
+    if(cands.length>0) selectCandidate(cands[0].char);
+  }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+loadScore();
+sentences=buildSentences();
+// De-duplicate by exact English prompt
+const seen=new Set();
+sentences=sentences.filter(s=>{
+  if(seen.has(s.en)) return false;
+  seen.add(s.en); return true;
+});
+shuffled=shuffle([...Array(sentences.length).keys()]);
+console.log(`Loaded ${sentences.length} sentences`);
+showSentence();
+</script>
+</body>
+</html>
